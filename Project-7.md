@@ -6,17 +6,11 @@ In previous [Project 6] we implemented a WordPress based solution that is ready 
 The tools we want our team to be able to use are well known and widely used by multiple DevOps teams, so we will introduce a single DevOps Tooling Solution that will consist of:
 
 1. Jenkins : free and open source automation server used to build CI/CD pipelines.
-
 2. Kubernetes: an open-source container-orchestration system for automating computer application deployment, scaling, and management.
-
 3. jfrog Artifactory: Universal Repository Manager supporting all major packaging formats, build tools and CI servers. Artifactory.
-
 4. Rancher: an open source software platform that enables organizations to run and manage Docker and Kubernetes in production.
-
 5. Grafana: a multi-platform open source analytics and interactive visualization web application.
-
 6. Prometheus – An open-source monitoring system with a dimensional data model, flexible query language, efficient time series database and modern alerting approach.
-git
 7. Kibana – Kibana is a free and open user interface that lets you visualize your Elasticsearch data and navigate the Elastic Stack.
 
 Side Self Study Read about Network-attached storage (NAS), Storage Area Network (SAN) and related protocols like NFS, (s)FTP, SMB, iSCSI. Explore what Block-level storage is and how it is used by Cloud Service providers, know the difference from Object storage. On the example of AWS services understand the difference between Block Storage, Object Storage and Network File System.
@@ -64,7 +58,9 @@ Create mount points on /mnt directory for the logical volumes as follow: Mount l
 
 4. Install NFS server, configure it to start on reboot and make sure it is u and running
 
-*sudo yum -y update sudo yum install nfs-utils -y sudo systemctl start nfs-server.service sudo systemctl enable nfs-server.service sudo systemctl status nfs-server.*
+![nfs](/Images/nfs-server.JPG)
+
+**sudo yum -y update sudo yum install nfs-utils -y sudo systemctl start nfs-server.service sudo systemctl enable nfs-server.service sudo systemctl status nfs-server.**
 
 ![nfs](/Images/fstab.JPG)
 
@@ -74,42 +70,43 @@ Create mount points on /mnt directory for the logical volumes as follow: Mount l
 
 Make sure we set up permission that will allow our Web servers to read, write and execute files on NFS:
 
-`sudo chown -R nobody: /mnt/apps sudo chown -R nobody: /mnt/logs sudo chown -R nobody: /mnt/opt
+**sudo chown -R nobody: /mnt/apps sudo chown -R nobody: /mnt/logs sudo chown -R nobody: /mnt/opt**
 
-sudo chmod -R 777 /mnt/apps sudo chmod -R 777 /mnt/logs sudo chmod -R 777 /mnt/opt
+**sudo chmod -R 777 /mnt/apps sudo chmod -R 777 /mnt/logs sudo chmod -R 777 /mnt/opt**
 
-sudo systemctl restart nfs-server.service`
+**sudo systemctl restart nfs-server.service**`
 
 ![chown](/Images/chown-chmod.JPG)
 
 Configure access to NFS for clients within the same subnet (example of Subnet CIDR – 172.31.16.0/20 ):
 
-`sudo vi /etc/exports
+`**sudo vi /etc/exports**
 
-/mnt/apps 172.31.16.0/20(rw,sync,no_all_squash,no_root_squash)  
-/mnt/logs 172.31.16.0/20(rw,sync,no_all_squash,no_root_squash)  
-/mnt/opt 172.31.16.0/20(rw,sync,no_all_squash,no_root_squash)
+*/mnt/apps 172.31.16.0/20(rw,sync,no_all_squash,no_root_squash)*  
+*/mnt/logs 172.31.16.0/20(rw,sync,no_all_squash,no_root_squash)*  
+*/mnt/opt 172.31.16.0/20(rw,sync,no_all_squash,no_root_squash)*
 
-Esc + :wq!
+**Esc + :wq!**
 
-sudo exportfs -arv`
+**sudo exportfs -arv**`
 
 Check which port is used by NFS and open it using Security Groups (add new Inbound Rule)
 
-rpcinfo -p | grep nfs
+**rpcinfo -p | grep nfs**
 
 ![rpcinfo](/Images/vi-exportfs.JPG)
 
 Important note: In order for NFS server to be accessible from your client, you must also open following ports: TCP 111, UDP 111, UDP 2049
 
-#STEP 2 — CONFIGURE THE DATABASE SERVER By now you should know how to install and configure a MySQL DBMS to work with remote Web Server
+## STEP 2 — CONFIGURE THE DATABASE SERVER 
+By now you should know how to install and configure a MySQL DBMS to work with remote Web Server
 
 Install MySQL server Create a database and name it tooling Create a database user and name it webaccess Grant permission to webaccess user on tooling database to do anything only from the webservers subnet cidr
 
 ![open tcp port](/Images/open-tcp-port-80.JPG)
 
 
-![database](/Images/show-databases-tooling.JPG)
+![database](/Images/create-database.JPG)
 
 ## Step 3 — Prepare the Web Servers
 
@@ -122,10 +119,9 @@ During the next steps we will do following:
 Configure NFS client (this step must be done on all three servers) Deploy a Tooling application to our Web Servers into a shared NFS folder Configure the Web Servers to work with a single MySQL database.
 
 1. Launch a new EC2 instance with RHEL 8 Operating System
-
 2. Install NFS client
 
-*sudo yum install nfs-utils nfs4-acl-tools -y*
+**sudo yum install nfs-utils nfs4-acl-tools -y**
 
 3. Mount /var/www/ and target the NFS server’s export for apps
 
@@ -133,32 +129,32 @@ Configure NFS client (this step must be done on all three servers) Deploy a Tool
 
 ![mkdir](/Images/mkdir-var-www-mount.JPG)
 
-*sudo vi /etc/fstab*
+**sudo vi /etc/fstab**
+
+![fstab](/Images/mount-var-log-httpd.JPG)
 
 5. Install Remi’s repository, Apache and PHP
-`sudo yum install httpd -y
+`
+**sudo yum install httpd -y**
 
 sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
 sudo dnf install dnf-utils http://rpms.remirepo.net/enterprise/remi-release-8.rpm
 
-sudo dnf module reset php
-
-sudo dnf module enable php:remi-7.4
-
-sudo dnf install php php-opcache php-gd php-curl php-mysqlnd
-
-sudo systemctl start php-fpm
-
-sudo systemctl enable php-fpm
-
-setsebool -P httpd_execmem 1`
+**sudo dnf module reset php**
+**sudo dnf module enable php:remi-7.4**
+**sudo dnf install php php-opcache php-gd php-curl php-mysqlnd**
+**sudo systemctl start php-fpm**
+**sudo systemctl enable php-fpm**
+**setsebool -P httpd_execmem 1**`
 
 ### APACHE INSTALLED
 
 ![start httpd](/Images/systemctl-start-status-httpd.JPG)
 
 ![apache](/Images/apache-login.JPG)
+
+![show databases](/Images/show-databases-tooling.JPG)
 
 ![webpage](/Images/inside-propitx-tooling-website.JPG)
 
@@ -169,6 +165,8 @@ setsebool -P httpd_execmem 1`
 7. Locate the log folder for Apache on the Web Server and mount it to NFS server’s export for logs. Repeat step №4 to make sure the mount point will persist after reboot.
 
 8. Fork the tooling source code from Darey.io Github Account to your Github account. (Learn how to fork a repo here)
+
+![fork](/Images/tooling.JPG)
 
 9. Deploy the tooling website’s code to the Webserver. Ensure that the html folder from the repository is deployed to /var/www/html
 
